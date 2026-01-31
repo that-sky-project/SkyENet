@@ -24,7 +24,11 @@ export interface UnknownEvent {
   type: 'unknown';
 }
 
-export type ENetEvent = ConnectEvent | DisconnectEvent | ReceiveEvent | UnknownEvent;
+export type ENetEvent =
+  | ConnectEvent
+  | DisconnectEvent
+  | ReceiveEvent
+  | UnknownEvent;
 
 export type BaseEventName = 'connect' | 'disconnect' | 'receive' | 'error';
 
@@ -80,9 +84,21 @@ export class Server {
   static create(options?: ServerOptions): Promise<Server>;
 
   // @note data and connections
-  send(peerId: PeerId, channelId: number, data: Buffer | string, reliable?: boolean): number;
-  sendRawPacket(peerId: PeerId, channelId: number, data: Buffer | Uint8Array | ArrayBuffer, flags?: number): number;
+  send(
+    peerId: PeerId,
+    channelId: number,
+    data: Buffer | string,
+    reliable?: boolean,
+  ): number;
+  sendRawPacket(
+    peerId: PeerId,
+    channelId: number,
+    data: Buffer | Uint8Array | ArrayBuffer,
+    flags?: number,
+  ): number;
   disconnect(peerId: PeerId, data?: number): void;
+  disconnectNow(peerId: PeerId, data?: number): void;
+  disconnectLater(peerId: PeerId, data?: number): void;
   broadcast(channelId: number, data: Buffer | string, reliable?: boolean): void;
 }
 
@@ -115,8 +131,14 @@ export class Client {
 
   // @note instance methods target connected server by default
   send(channelId: number, data: Buffer | string, reliable?: boolean): number;
-  sendRawPacket(channelId: number, data: Buffer | Uint8Array | ArrayBuffer, flags?: number): number;
+  sendRawPacket(
+    channelId: number,
+    data: Buffer | Uint8Array | ArrayBuffer,
+    flags?: number,
+  ): number;
   disconnect(data?: number): void;
+  disconnectNow(data?: number): void;
+  disconnectLater(data?: number): void;
 
   // @note still expose low-level methods via Base class through TS, but Client overrides instance signatures
   // The Client instance methods above shadow the base signatures that include peerId.
@@ -156,7 +178,5 @@ export const PACKET_FLAG_SENT: 256;
 // @note default export for convenience
 export default {
   Client: Client,
-  Server: Server
+  Server: Server,
 };
-
-

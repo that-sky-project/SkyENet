@@ -48,6 +48,8 @@ private:
     Napi::Value Flush(const Napi::CallbackInfo& info);
     Napi::Value Connect(const Napi::CallbackInfo& info);
     Napi::Value Disconnect(const Napi::CallbackInfo& info);
+    Napi::Value DisconnectNow(const Napi::CallbackInfo& info);
+    Napi::Value DisconnectLater(const Napi::CallbackInfo& info);
     Napi::Value SendPacket(const Napi::CallbackInfo& info);
     Napi::Value SendRawPacket(const Napi::CallbackInfo& info);
     Napi::Value SetCompression(const Napi::CallbackInfo& info);
@@ -72,6 +74,8 @@ Napi::Object ENetWrapper::Init(Napi::Env env, Napi::Object exports) {
         InstanceMethod("flush", &ENetWrapper::Flush),
         InstanceMethod("connect", &ENetWrapper::Connect),
         InstanceMethod("disconnect", &ENetWrapper::Disconnect),
+        InstanceMethod("disconnectNow", &ENetWrapper::DisconnectNow),
+        InstanceMethod("disconnectLater", &ENetWrapper::DisconnectLater),
         InstanceMethod("sendPacket", &ENetWrapper::SendPacket),
         InstanceMethod("sendRawPacket", &ENetWrapper::SendRawPacket),
         InstanceMethod("setCompression", &ENetWrapper::SetCompression),
@@ -370,6 +374,50 @@ Napi::Value ENetWrapper::Disconnect(const Napi::CallbackInfo& info) {
     }
     
     enet_peer_disconnect(peer, data);
+    return env.Undefined();
+}
+
+Napi::Value ENetWrapper::DisconnectNow(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    if (info.Length() < 1 || !(info[0].IsBigInt() || info[0].IsNumber())) {
+        Napi::TypeError::New(env, "Expected peer ID (bigint or number)").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    bool ok = false;
+    ENetPeer* peer = JsValueToPeer(info[0], ok);
+    if (!ok || !peer) {
+        Napi::TypeError::New(env, "Invalid peer id").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    enet_uint32 data = 0;
+    if (info.Length() > 1 && info[1].IsNumber()) {
+        data = info[1].As<Napi::Number>().Uint32Value();
+    }
+    enet_peer_disconnect_now(peer, data);
+    return env.Undefined();
+}
+
+Napi::Value ENetWrapper::DisconnectLater(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    if (info.Length() < 1 || !(info[0].IsBigInt() || info[0].IsNumber())) {
+        Napi::TypeError::New(env, "Expected peer ID (bigint or number)").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    bool ok = false;
+    ENetPeer* peer = JsValueToPeer(info[0], ok);
+    if (!ok || !peer) {
+        Napi::TypeError::New(env, "Invalid peer id").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    enet_uint32 data = 0;
+    if (info.Length() > 1 && info[1].IsNumber()) {
+        data = info[1].As<Napi::Number>().Uint32Value();
+    }
+    enet_peer_disconnect_later(peer, data);
     return env.Undefined();
 }
 

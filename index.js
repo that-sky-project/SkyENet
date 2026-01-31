@@ -117,10 +117,14 @@ class ENetBase {
 
       socket.on('error', err => {
         if (err.code === 'EADDRINUSE') {
-          try { socket.close(); } catch {}
+          try {
+            socket.close();
+          } catch {}
           resolve(false);
         } else {
-          try { socket.close(); } catch {}
+          try {
+            socket.close();
+          } catch {}
           resolve(false);
         }
       });
@@ -196,6 +200,26 @@ class ENetBase {
     // @note request graceful disconnect and clean up
     try {
       this.native.disconnect(peerId, data);
+      this.peers.delete(peerId);
+    } catch (err) {
+      this.emit('error', err);
+    }
+  }
+
+  disconnectNow(peerId, data = 0) {
+    // @note force immediate disconnect
+    try {
+      this.native.disconnectNow(peerId, data);
+      this.peers.delete(peerId);
+    } catch (err) {
+      this.emit('error', err);
+    }
+  }
+
+  disconnectLater(peerId, data = 0) {
+    // @note schedule disconnect after all outgoing queued packets are sent
+    try {
+      this.native.disconnectLater(peerId, data);
       this.peers.delete(peerId);
     } catch (err) {
       this.emit('error', err);
@@ -429,12 +453,19 @@ class Client extends ENetBase {
       }
 
       // @note if timeout requested, start loop in background and await connect or timeout
-      const timeoutMs = options && typeof options.timeoutMs === 'number' ? options.timeoutMs : 0;
+      const timeoutMs =
+        options && typeof options.timeoutMs === 'number'
+          ? options.timeoutMs
+          : 0;
       if (timeoutMs > 0) {
         if (!this.running) {
           // start event loop without awaiting
           (async () => {
-            try { await super.listen(); } catch (err) { this.emit('error', err); }
+            try {
+              await super.listen();
+            } catch (err) {
+              this.emit('error', err);
+            }
           })();
         }
         await new Promise((resolve, reject) => {
@@ -461,8 +492,6 @@ class Client extends ENetBase {
     }
   }
 
-
-
   // Override to send to the connected server peer by default
   send(channelId, data, reliable = true) {
     if (this.serverPeer) {
@@ -487,6 +516,22 @@ class Client extends ENetBase {
   disconnect(data = 0) {
     if (this.serverPeer) {
       super.disconnect(this.serverPeer, data);
+      this.serverPeer = null;
+    }
+  }
+
+  // Override to disconnect immediately from the connected server peer by default
+  disconnectNow(data = 0) {
+    if (this.serverPeer) {
+      super.disconnectNow(this.serverPeer, data);
+      this.serverPeer = null;
+    }
+  }
+
+  // Override to disconnect later from the connected server peer by default
+  disconnectLater(data = 0) {
+    if (this.serverPeer) {
+      super.disconnectLater(this.serverPeer, data);
       this.serverPeer = null;
     }
   }
@@ -543,7 +588,9 @@ export class RawPacketBuilder {
   writeString(str, encoding = 'utf8') {
     if (encoding && encoding !== 'utf8') {
       // @note only utf8 is supported via TextEncoder
-      throw new Error('RawPacketBuilder.writeString supports only utf8 encoding');
+      throw new Error(
+        'RawPacketBuilder.writeString supports only utf8 encoding',
+      );
     }
     const encoder = new TextEncoder();
     const encoded = encoder.encode(str);
