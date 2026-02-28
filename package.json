@@ -1,10 +1,10 @@
 {
-  "name": "gtenet",
+  "name": "sky-enet",
   "version": "0.1.5",
-  "description": "Node.js bindings for the ENet reliable UDP networking library",
+  "description": "Node.js bindings for the ENet reliable UDP networking library.",
   "main": "index.js",
   "types": "index.d.ts",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "build": "node-gyp rebuild",
     "clean": "node-gyp clean",
@@ -13,12 +13,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YoruAkio/GTEnet.git"
+    "url": "git+https://github.com/that-sky-project/SkyENet.git"
   },
   "bugs": {
-    "url": "https://github.com/YoruAkio/GTEnet/issues"
+    "url": "https://github.com/that-sky-project/SkyENet/issues"
   },
-  "homepage": "https://github.com/YoruAkio/GTEnet#readme",
+  "homepage": "https://github.com/that-sky-project/SkyENet#readme",
   "dependencies": {
     "node-addon-api": "^7.1.1",
     "node-gyp-build": "^4.8.0"
@@ -36,7 +36,7 @@
     "game",
     "native"
   ],
-  "author": "Yoru Akio",
+  "author": "HTMonkeyG",
   "license": "MIT",
   "files": [
     "index.js",

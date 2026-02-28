@@ -1,13 +1,13 @@
-import { Server } from '../index.js';
+const { Server } = require('../index.js');
 
 async function startServer() {
   try {
     // Create a server with configuration
     const server = await Server.create({
       address: '127.0.0.1',
-      port: 17091,
+      port: 25565,
       maxPeer: 32,
-      usingNewPacketForServer: true,
+      checksum: true
     });
 
     // Set up event handlers with chaining

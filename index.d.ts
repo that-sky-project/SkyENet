@@ -1,3 +1,27 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2025 Yoru Akio
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 // @note type declarations for gtenet to improve editor intellisense
 
 export type PeerId = bigint;
@@ -41,6 +65,8 @@ export interface ServerOptions {
   usingNewPacketForServer?: boolean;
   incomingBandwidth?: number;
   outgoingBandwidth?: number;
+  checksum?: boolean;
+  compression?: boolean;
 }
 
 export interface ClientOptions {
@@ -51,6 +77,8 @@ export interface ClientOptions {
   usingNewPacket?: boolean;
   incomingBandwidth?: number;
   outgoingBandwidth?: number;
+  checksum?: boolean;
+  compression?: boolean;
 }
 
 /**
@@ -145,27 +173,6 @@ export class Client {
 
   // @note current server peer id if connected
   serverPeer: PeerId | null;
-}
-
-/**
- * Utility builder to create raw packet binary payloads
- */
-export class RawPacketBuilder {
-  constructor(size?: number);
-  buffer: ArrayBuffer;
-  view: DataView;
-  offset: number;
-
-  writeUint8(value: number): this;
-  writeUint16(value: number, littleEndian?: boolean): this;
-  writeUint32(value: number, littleEndian?: boolean): this;
-  writeFloat32(value: number, littleEndian?: boolean): this;
-  writeFloat64(value: number, littleEndian?: boolean): this;
-  writeString(str: string, encoding?: string): this;
-  writeBytes(bytes: Uint8Array): this;
-  getPacketData(): ArrayBuffer;
-  reset(): this;
-  size(): number;
 }
 
 // @note packet flags (mirror ENet constants)

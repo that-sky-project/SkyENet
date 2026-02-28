@@ -1,10 +1,28 @@
-import { createRequire } from 'module';
-import { createSocket } from 'dgram';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-const require = createRequire(import.meta.url);
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2025 Yoru Akio
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+const { createSocket } = require('dgram');
 
 let enet;
 try {
@@ -20,6 +38,12 @@ try {
   console.error('Or install build tools and run: npm run build');
   throw err;
 }
+
+const PACKET_FLAG_RELIABLE = 1;
+const PACKET_FLAG_UNSEQUENCED = 2;
+const PACKET_FLAG_NO_ALLOCATE = 4;
+const PACKET_FLAG_UNRELIABLE_FRAGMENT = 8;
+const PACKET_FLAG_SENT = 256;
 
 /**
  * base wrapper for common enet host/peer management and event dispatch
@@ -95,8 +119,8 @@ class ENetBase {
 
   setupHost(config, isServer = false) {
     // @note enable compression and checksum
-    this.native.setCompression(true);
-    this.native.setChecksum(true);
+    this.native.setCompression(!!config.compression);
+    this.native.setChecksum(!!config.checksum);
 
     // @note optionally enable new packet mode
     if (config.usingNewPacket || config.usingNewPacketForServer) {
@@ -119,12 +143,12 @@ class ENetBase {
         if (err.code === 'EADDRINUSE') {
           try {
             socket.close();
-          } catch {}
+          } catch { }
           resolve(false);
         } else {
           try {
             socket.close();
-          } catch {}
+          } catch { }
           resolve(false);
         }
       });
@@ -294,6 +318,8 @@ class Server extends ENetBase {
           : false,
       incomingBandwidth: options.incomingBandwidth || 0,
       outgoingBandwidth: options.outgoingBandwidth || 0,
+      checksum: !!options.checksum,
+      compression: !!options.compression,
     };
 
     this.config = config;
@@ -325,6 +351,8 @@ class Server extends ENetBase {
         channelLimit: this.config.channelLimit,
         incomingBandwidth: this.config.incomingBandwidth,
         outgoingBandwidth: this.config.outgoingBandwidth,
+        checksum: this.config.checksum,
+        compression: this.config.compression,
       };
 
       const result = this.native.createHost(hostConfig, hostOptions);
@@ -396,6 +424,8 @@ class Client extends ENetBase {
         options.usingNewPacket !== undefined ? options.usingNewPacket : false,
       incomingBandwidth: options.incomingBandwidth || 0,
       outgoingBandwidth: options.outgoingBandwidth || 0,
+      checksum: !!options.checksum,
+      compression: !!options.compression,
     };
 
     this.config = config;
@@ -411,6 +441,8 @@ class Client extends ENetBase {
         channelLimit: this.config.channelLimit,
         incomingBandwidth: this.config.incomingBandwidth,
         outgoingBandwidth: this.config.outgoingBandwidth,
+        checksum: this.config.checksum,
+        compression: this.config.compression,
       };
 
       const result = this.native.createHost(null, hostOptions);
@@ -537,92 +569,12 @@ class Client extends ENetBase {
   }
 }
 
-// @note packet flag constants
-export const PACKET_FLAG_RELIABLE = 1;
-export const PACKET_FLAG_UNSEQUENCED = 2;
-export const PACKET_FLAG_NO_ALLOCATE = 4;
-export const PACKET_FLAG_UNRELIABLE_FRAGMENT = 8;
-export const PACKET_FLAG_SENT = 256;
-
-/**
- * helper to build raw binary payloads for sendRawPacket
- */
-export class RawPacketBuilder {
-  constructor(size = 1024) {
-    this.buffer = new ArrayBuffer(size);
-    this.view = new DataView(this.buffer);
-    this.offset = 0;
-  }
-
-  // @note write helpers for primitive types
-  writeUint8(value) {
-    this.view.setUint8(this.offset, value);
-    this.offset += 1;
-    return this;
-  }
-
-  writeUint16(value, littleEndian = true) {
-    this.view.setUint16(this.offset, value, littleEndian);
-    this.offset += 2;
-    return this;
-  }
-
-  writeUint32(value, littleEndian = true) {
-    this.view.setUint32(this.offset, value, littleEndian);
-    this.offset += 4;
-    return this;
-  }
-
-  writeFloat32(value, littleEndian = true) {
-    this.view.setFloat32(this.offset, value, littleEndian);
-    this.offset += 4;
-    return this;
-  }
-
-  writeFloat64(value, littleEndian = true) {
-    this.view.setFloat64(this.offset, value, littleEndian);
-    this.offset += 8;
-    return this;
-  }
-
-  writeString(str, encoding = 'utf8') {
-    if (encoding && encoding !== 'utf8') {
-      // @note only utf8 is supported via TextEncoder
-      throw new Error(
-        'RawPacketBuilder.writeString supports only utf8 encoding',
-      );
-    }
-    const encoder = new TextEncoder();
-    const encoded = encoder.encode(str);
-    const uint8Array = new Uint8Array(this.buffer, this.offset);
-    uint8Array.set(encoded);
-    this.offset += encoded.length;
-    return this;
-  }
-
-  writeBytes(bytes) {
-    const uint8Array = new Uint8Array(this.buffer, this.offset);
-    uint8Array.set(bytes);
-    this.offset += bytes.length;
-    return this;
-  }
-
-  // @note get final packet data up to offset
-  getPacketData() {
-    return this.buffer.slice(0, this.offset);
-  }
-
-  // @note reset for reuse
-  reset() {
-    this.offset = 0;
-    return this;
-  }
-
-  // @note current size in bytes
-  size() {
-    return this.offset;
-  }
-}
-
-export { Client, Server };
-export default { Client, Server };
+module.exports = {
+  PACKET_FLAG_RELIABLE,
+  PACKET_FLAG_UNSEQUENCED,
+  PACKET_FLAG_NO_ALLOCATE,
+  PACKET_FLAG_UNRELIABLE_FRAGMENT,
+  PACKET_FLAG_SENT,
+  Client,
+  Server
+};
