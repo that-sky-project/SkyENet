@@ -1,6 +1,6 @@
-# 🌐 GTEnet
+# SkyEnet
 
-A high-performance Node.js binding for the ENet reliable UDP networking library. Built specifically for Growtopia private server development with modern JavaScript APIs. 🚀
+A high-performance Node.js binding for the ENet reliable UDP networking library. Built specifically for Sky:CotL private server development with modern JavaScript APIs. 🚀
 
 > [!WARNING]
 > This project is in early development. Expect breaking changes and limited features. Use at your own risk!
